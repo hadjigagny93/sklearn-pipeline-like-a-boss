@@ -36,6 +36,7 @@ class RemoveSaveParams(BaseEstimator, TransformerMixin):
     save: save the features for testing processes -- if not then no test will be runned
     hash: to link train and test processes
     method_name: missing_values or low_std_remove class
+    MAP: constant file name for esay access during test process
 
     method
     ------
@@ -91,7 +92,7 @@ class HandlingMissingValue(RemoveSaveParams):
         return features_of_interest
 
 class RemoveLowStdFeature(RemoveSaveParams):
-    "removed low std features"
+    "removed low std features -- all variables with standard deviation less or equal than thrs will be removed "
 
     def __init__(self, std_level,job="train",save=True,hashed=None,method_name="remove_low_std"):
         super().__init__(job=job, save=save, hashed=hashed, method_name=method_name)
@@ -104,7 +105,9 @@ class RemoveLowStdFeature(RemoveSaveParams):
         return high_std_features
 
 class RemoveOutliers(BaseEstimator, TransformerMixin):
-    """ for numeric variable"""
+    """ for numeric variable -- a list mistake in this class
+    try to find it !!!!!!!
+    this one can occurs when critical values for the 3 in line 122"""
 
     def __init__(self, job="train"):
         self.job = job
@@ -119,6 +122,7 @@ class RemoveOutliers(BaseEstimator, TransformerMixin):
         return X[np.abs(X - X.mean()) <= (3 * X.std())]
 
 class DataFrameSelector(BaseEstimator, TransformerMixin):
+    """allows to select given features think to numerical and categorical features"""
 
     def __init__(self, features, typ="numerical"):
         self.features = features
@@ -134,6 +138,8 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
         return X[col].values
 
 class CombinedAttrAdder(BaseEstimator, TransformerMixin):
+    """ Create new features from dataset columns, not used here but you
+    can, dont deprive yourself!"""
 
     def __init__(self, name_columns):
         pass
@@ -145,6 +151,16 @@ class CombinedAttrAdder(BaseEstimator, TransformerMixin):
         pass
 
 class ProcessPipeline:
+    """A support for training and testing pipelines
+    Inheritance will not be used in this context, more abstract but less
+    clever ! and dont forget ... youre software engineer too you have to delivery works that
+    others engineers can be quickly read and understand
+
+    attributes
+    ----------
+    pca_enable: perform dimensionality reduction or not
+    build_pipeline: build a whole process pipeline
+    """
 
     def __init__(self, job="train", thrs=60, pca_enable=False, save=True, pipeline_hash="hash", std=2):
         self.job = self._get_job(job=job)
@@ -205,6 +221,7 @@ class ProcessPipeline:
         return full_common_pipeline
 
 class TestPipeline:
+    """ load the model previously tuning during training process and predict"""
     def __init__(self, process_pipeline):
 
         if isinstance(process_pipeline, ProcessPipeline):
@@ -227,6 +244,10 @@ class TestPipeline:
 
 
 class TrainPipeline:
+    """A class that creates model pipelines with some basic method (overresampling here
+    because of an imbalanced dataset.
+    hash must be the same for train and test pipeline when save is set to true
+    """
     def __init__(self, process_pipeline):
 
         if isinstance(process_pipeline, ProcessPipeline):
@@ -257,6 +278,7 @@ class TrainPipeline:
 
 
 def main():
+    """main function for testing your implementation"""
 
     HASH = "XX-ML"
     train_process_pipeline = ProcessPipeline(pipeline_hash=HASH, job="train")
@@ -265,7 +287,6 @@ def main():
     train_pipeline.run_pipeline()
     test_pipeline = TestPipeline(test_process_pipeline)
     print("accuracy -- {}".format(test_pipeline.run_pipeline()[1]))
-
 
 if __name__ == "__main__":
     main()
